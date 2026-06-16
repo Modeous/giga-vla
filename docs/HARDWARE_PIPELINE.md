@@ -35,11 +35,33 @@ End-to-end CI/CD for iterative firmware development on the Arduino GIGA R1.
   - `test_basic.py` — protocol correctness.
   - `test_loop.py` — soak/iteration: PING latency p50/p99, LED toggle
     consistency, repeated SELFTEST. Iteration counts tunable via env vars.
+- **Emulator** (`scripts/giga_sim.py`)
+  - A PTY-backed software model of the test harness that implements the exact
+    same serial protocol as `firmware/test_harness`. Lets the entire host side
+    (conftest fixture, protocol, loop tests) run with no board attached.
+  - `scripts/run_sim_tests.sh` / `make sim-test` start the emulator, point
+    `GIGA_PORT` at its PTY, and run the suite against it.
 - **CI** (`.github/workflows/hardware-ci.yml`)
   - `build` job on `ubuntu-latest` — pure compile gate for every PR.
+  - `host-sim` job on `ubuntu-latest` — runs the full HIL suite against the
+    emulator, gating PRs on host logic even when no hardware/runner is around.
   - `hil` job on `[self-hosted, macOS, giga-r1]` — flashes and tests on real
     hardware. Guarded by `concurrency: giga-r1-hardware` so only one run at
     a time touches the board.
+
+## Validating the pipeline without a board
+
+```bash
+make setup       # or: python3 -m venv .venv && .venv/bin/pip install -r tests/requirements.txt
+make sim-test    # runs the full HIL suite against the software emulator
+```
+
+This exercises everything except the physical board: the serial command
+protocol, the conftest fixture (banner drain, PING sanity guard, `cmd` /
+`expect_ok` helpers), and the PING/LED/SELFTEST iteration loops. The same run
+happens in CI via the `host-sim` job. Note the emulator mirrors the firmware
+protocol by hand, so keep `scripts/giga_sim.py` in sync when you change
+`firmware/test_harness/test_harness.ino`.
 
 ## Iterative dev loop on the Mac
 

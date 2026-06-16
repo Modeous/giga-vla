@@ -51,6 +51,24 @@ jobs:
           name: firmware-binaries
           path: build/
 
+  host-sim:
+    # Host-side validation without a board: run the full HIL test suite against
+    # scripts/giga_sim.py (a PTY emulator mirroring firmware/test_harness). This
+    # gates PRs on the pipeline's host logic even when the self-hosted runner is
+    # offline or no hardware is attached.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt
+      - name: Run HIL suite against emulator
+        run: PYTEST="python -m pytest" ./scripts/run_sim_tests.sh -v
+
   hil:
     name: hardware-in-loop
     needs: build

@@ -15,6 +15,16 @@ make iterate                 # compile + flash test_harness + run HIL tests
 make watch                   # same, but auto-reruns on any firmware/tests change
 ```
 
+## No board handy?
+
+```bash
+make sim-test                # run the full HIL suite against a software emulator
+```
+
+`scripts/giga_sim.py` mirrors the firmware serial protocol over a PTY, so the
+host side of the pipeline (fixtures, protocol, loop tests) is fully validated
+with no hardware. The `host-sim` CI job runs this on every PR.
+
 ## CI
 
 `.github/workflows/hardware-ci.yml` runs on every push and PR:

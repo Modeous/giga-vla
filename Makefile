@@ -5,13 +5,14 @@ BUILD_DIR ?= build/$(notdir $(SKETCH))
 VENV := .venv
 PY := $(VENV)/bin/python
 
-.PHONY: help setup build flash test iterate watch detect lint clean
+.PHONY: help setup build flash test sim-test iterate watch detect lint clean
 
 help:
 	@echo "make setup     - install arduino-cli, mbed_giga core, venv, python deps"
 	@echo "make build     - compile $(SKETCH)"
 	@echo "make flash     - compile + upload $(SKETCH) to attached GIGA"
 	@echo "make test      - run HIL test suite (board must be flashed)"
+	@echo "make sim-test  - run HIL suite against the software emulator (no board)"
 	@echo "make iterate   - flash + test (one shot)"
 	@echo "make watch     - flash + test on every change to firmware/ or tests/"
 	@echo "make detect    - print detected GIGA port"
@@ -28,6 +29,9 @@ flash:
 
 test:
 	$(VENV)/bin/pytest tests/ -v
+
+sim-test:
+	./scripts/run_sim_tests.sh -v
 
 iterate:
 	./scripts/iterate.sh
