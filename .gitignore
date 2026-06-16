@@ -1,0 +1,20 @@
+# build outputs
+build/
+*.hex
+*.bin
+*.elf
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# test reports
+report.xml
+report.html
+
+# editors / os
+.DS_Store
+.vscode/
+.idea/
