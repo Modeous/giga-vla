@@ -1,0 +1,118 @@
+name: hardware-ci
+
+# Runs the full GIGA R1 hardware-in-loop pipeline on every push and PR.
+# This workflow MUST target a self-hosted runner physically wired to a GIGA R1
+# (see runner/SETUP.md). The runner is expected to carry the labels
+# [self-hosted, macOS, giga-r1].
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      ping_iters:
+        description: "PING loop iterations"
+        required: false
+        default: "500"
+      led_iters:
+        description: "LED toggle iterations"
+        required: false
+        default: "200"
+
+concurrency:
+  # Serialize HIL jobs — only one job at a time can own the physical board.
+  group: giga-r1-hardware
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Pure compile sanity on a hosted runner so non-hardware PRs still get
+    # firmware build feedback even if the self-hosted runner is offline.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arduino-cli
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh \
+            | BINDIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install GIGA core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:mbed_giga
+      - name: Compile test harness
+        run: arduino-cli compile --fqbn arduino:mbed_giga:giga --output-dir build/test_harness firmware/test_harness
+      - name: Compile main firmware
+        run: arduino-cli compile --fqbn arduino:mbed_giga:giga --output-dir build/main firmware/main
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-binaries
+          path: build/
+
+  host-sim:
+    # Host-side validation without a board: run the full HIL test suite against
+    # scripts/giga_sim.py (a PTY emulator mirroring firmware/test_harness). This
+    # gates PRs on the pipeline's host logic even when the self-hosted runner is
+    # offline or no hardware is attached.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt
+      - name: Run HIL suite against emulator
+        run: PYTEST="python -m pytest" ./scripts/run_sim_tests.sh -v
+
+  hil:
+    name: hardware-in-loop
+    needs: build
+    runs-on: [self-hosted, macOS, giga-r1]
+    timeout-minutes: 30
+    env:
+      GIGA_PING_ITERS: ${{ github.event.inputs.ping_iters || '500' }}
+      GIGA_LED_ITERS:  ${{ github.event.inputs.led_iters  || '200' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup toolchain
+        run: ./scripts/setup_mac.sh
+
+      - name: Detect board
+        id: detect
+        run: |
+          PORT="$(python3 scripts/detect_giga.py --quiet)"
+          echo "port=$PORT" >> "$GITHUB_OUTPUT"
+          echo "GIGA on $PORT"
+
+      - name: Compile + flash test harness
+        env:
+          GIGA_PORT: ${{ steps.detect.outputs.port }}
+        run: ./scripts/flash.sh firmware/test_harness
+
+      - name: Wait for re-enumeration
+        run: sleep 3
+
+      - name: Run HIL tests
+        env:
+          GIGA_PORT: ${{ steps.detect.outputs.port }}
+        run: |
+          source .venv/bin/activate
+          pytest tests/ -v \
+            --junitxml=report.xml \
+            --html=report.html --self-contained-html
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hil-report
+          path: |
+            report.xml
+            report.html
+            build/
