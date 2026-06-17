@@ -21,12 +21,31 @@ the Python test deps.
 
 ## 2. Register the runner
 
+You have two options. The scripted path is faster; the manual path is what
+GitHub documents.
+
+### Option A — scripted (recommended)
+
 1. In GitHub, open the repo → **Settings** → **Actions** → **Runners** →
-   **New self-hosted runner** → **macOS**.
-2. Follow the download/configure commands shown. When prompted for labels,
-   add `giga-r1` in addition to the default `self-hosted` / `macOS` labels.
-   The workflow targets `[self-hosted, macOS, giga-r1]`.
-3. Use a dedicated work dir, e.g. `~/actions-runner`.
+   **New self-hosted runner** → **macOS**. Note the **repo URL** and the
+   short-lived **registration token** shown on that page.
+2. From the repo root on the Mac:
+
+   ```bash
+   ./scripts/install_runner.sh \
+     --url   https://github.com/Modeous/giga-vla \
+     --token <REGISTRATION_TOKEN>
+   ```
+
+   This downloads the runner, configures it under `~/actions-runner-giga` with
+   the `giga-r1` label, installs it as a launchd service, and starts it. The
+   default name is `giga-mac`; override with `--name`.
+
+### Option B — manual
+
+1. On the same **New self-hosted runner** page, follow the download/configure
+   commands shown. When prompted for labels, add `giga-r1` in addition to the
+   defaults. Use a dedicated work dir, e.g. `~/actions-runner-giga`.
 
 ## 3. Run as a launchd service
 
