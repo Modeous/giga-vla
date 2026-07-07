@@ -1,0 +1,9 @@
+# Pinned build profile: `arduino-cli compile --profile giga` builds with
+# exactly this core version. The mbed core has shipped broken USB CDC between
+# minor versions — do not unpin casually (see docs/ARCHITECTURE.md).
+default_profile: giga
+profiles:
+  giga:
+    fqbn: arduino:mbed_giga:giga
+    platforms:
+      - platform: arduino:mbed_giga (4.2.1)

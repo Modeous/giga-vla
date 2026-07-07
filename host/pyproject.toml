@@ -1,0 +1,16 @@
+[project]
+name = "giga-vla-host"
+version = "0.1.0"
+description = "Host side of the GIGA-VLA link: wire codec and serial transport"
+requires-python = ">=3.10"
+dependencies = ["pyserial>=3.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["giga_host*"]
