@@ -19,9 +19,13 @@ $(BUILD)/test_protocol: test_protocol.cpp ../giga_bridge/*.h | $(BUILD)
 $(BUILD)/fuzz_frames: fuzz_frames.cpp ../giga_bridge/*.h | $(BUILD)
 	$(CXX) $(CXXFLAGS) -o $@ fuzz_frames.cpp
 
-test: $(BUILD)/test_protocol $(BUILD)/fuzz_frames
+$(BUILD)/test_control: test_control.cpp ../giga_bridge/*.h ../giga_bridge/config/*.h | $(BUILD)
+	$(CXX) $(CXXFLAGS) -o $@ test_control.cpp
+
+test: $(BUILD)/test_protocol $(BUILD)/fuzz_frames $(BUILD)/test_control
 	cd $(REPO_ROOT) && firmware/native_tests/$(BUILD)/test_protocol
 	cd $(REPO_ROOT) && firmware/native_tests/$(BUILD)/fuzz_frames
+	cd $(REPO_ROOT) && firmware/native_tests/$(BUILD)/test_control
 
 clean:
 	rm -rf $(BUILD)

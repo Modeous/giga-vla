@@ -52,6 +52,11 @@ class FakeGiga:
         try:
             msg = messages.unpack_any(payload)
         except messages.MessageError:
+            # A CRC-valid but structurally inconsistent chunk is an
+            # admission rejection (PROTOCOL.md rule 1), not silence.
+            if payload and payload[0] == messages.MSG_ACTION_CHUNK:
+                if self.enabled and not self.fault_latched:
+                    self.chunk_rejected = True
             return
         if isinstance(msg, messages.Enable):
             if msg.enable and not self.estop:
@@ -78,6 +83,7 @@ class FakeGiga:
             if now - self.last_chunk_time > WATCHDOG_S:
                 self.fault_latched = True
                 self.chunk_starved = True
+                self.enabled = False  # FAULT implies not enabled, like firmware
                 self.chunk = None
         if self.chunk is not None:
             # linear interpolation along the chunk's dt grid
