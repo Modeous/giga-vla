@@ -1,0 +1,42 @@
+{
+  "chunk_nominal.bin": {
+    "decodes": true,
+    "type": "chunk",
+    "admissible": true
+  },
+  "chunk_teleop_n1.bin": {
+    "decodes": true,
+    "type": "chunk",
+    "admissible": true
+  },
+  "chunk_bad_crc.bin": {
+    "decodes": false
+  },
+  "chunk_nan.bin": {
+    "decodes": true,
+    "type": "chunk",
+    "admissible": false,
+    "reject_reason": "non-finite value"
+  },
+  "chunk_dof_mismatch.bin": {
+    "decodes": true,
+    "type": "chunk",
+    "admissible": false,
+    "reject_reason": "dof mismatch"
+  },
+  "enable_on.bin": {
+    "decodes": true,
+    "type": "enable",
+    "enable": true
+  },
+  "enable_off.bin": {
+    "decodes": true,
+    "type": "enable",
+    "enable": false
+  },
+  "state_nominal.bin": {
+    "decodes": true,
+    "type": "state",
+    "seq_echo": 1
+  }
+}

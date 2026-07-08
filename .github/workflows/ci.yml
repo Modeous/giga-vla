@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install host package
+        run: pip install -e "./host[dev]"
+      - name: Run pytest (includes 10 s pty soak)
+        run: python -m pytest host/tests -q
+      - name: Golden vectors are reproducible
+        run: |
+          python protocol/vectors/generate.py
+          git diff --exit-code protocol/vectors
+
+  native-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run native codec tests + 1M-frame fuzz
+        run: make -C firmware/native_tests
+
+  firmware-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Compile giga_bridge with the pinned core
+        run: |
+          arduino-cli config init --additional-urls ""
+          arduino-cli compile --profile giga firmware/giga_bridge
